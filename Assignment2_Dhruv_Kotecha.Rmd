@@ -1,0 +1,171 @@
+---
+title: " Assembling an R Visualization Presentation "
+author: "Dhruv Kotecha"
+output:
+  slidy_presentation: default
+  ioslides_presentation: default
+date: "2022-02-24"
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+#install.packages("igraph")
+library(tidyverse)
+library(here)
+library(skimr)
+library(janitor)
+library(ggplot2)
+library(lubridate)
+library(dplyr)   
+library(readr)
+library(tidyr)
+library(igraph)
+```
+
+##  About The Data
+
+I am going to use the csv file from "Amazon Top 50 Bestselling Books 2009 - 2019". This data set contains 7-Columns.
+The column names are:
+Author: The author of the book.
+
+Name of the book.
+
+User rating: Amazon user rating.
+
+Reviews: Number of written reviews on amazon.
+
+Price: The price of the book. 
+
+Year: The Year(s) it ranked on the bestseller.
+
+Genre: Whether fiction or non-fiction.
+
+For this case I am choosing R programming, because it allow me work with big amounts of data, cleaning data and create visualizations with little code. Also, I will use R Markdown to reproduce, share my code, and document all the work that I am going to do.
+
+Data set Link- https://www.kaggle.com/sootersaalu/amazon-top-50-bestselling-books-2009-2019
+
+##  Problem Statement
+
+The data set containing the Amazon Bestselling Books allows us to analyze how, over time, which genres of books did well and which authors sold the most books. 
+We also provide user ratings and reviews for each book, which can help customers narrow down their choices.
+By doing this visualization, we have a clear representation of the data set as well as an easy comprehension of which author and genre fared best.
+
+## Summary  
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+Amazon_top50_bestselling_books_from2009to2019 =read.csv("C:\\Users\\DHRUV\\Downloads\\bestsellers with categories.csv")
+Amazon_top50_bestselling_books_from2009to2019 <- clean_names(Amazon_top50_bestselling_books_from2009to2019)
+#sum(is.na(Amazon_top50_bestselling_books_from2009to2019))
+
+Amazon_top50_bestselling_books_from2009to2019 %>%
+select(user_rating, reviews, price)%>%
+summary()
+
+Amazon_top50_bestselling_books_from2009to2019$year <- ordered(Amazon_top50_bestselling_books_from2009to2019$year, levels = c("2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019"))
+
+
+```
+
+
+
+
+##  Top selling books by genre from 2009-2019
+
+Considering the following plot , From the period from 2009 to 2019, "Non finction" genre books are more popular that the "Fiction" genre. We can see that specially in 2015 the non fiction genre was the favourite between the Amazon top 50 bestselling books.On the contrary, on 2014 the Non Fiction genre was more popular that the Fiction one.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+
+ggplot (data = Amazon_top50_bestselling_books_from2009to2019, mapping = aes(y = year, fill = genre))+
+geom_bar(position = "dodge")+
+labs(title = "Total Amazon top best selling books by genre yearly", x = "Total books", y = "Year", subtitle = "Data from 2009 to 2019")+
+coord_flip()+
+theme(legend.title = element_blank())
+
+
+```
+
+
+## Authors with most bestselling books from 2009 to 2019
+
+From the above graph we saw how over the period the genres of books performed, in this we can find the authors with best selling book quantity over the period. This helps the customers to analyze which authors book they would love to buy and read, I have also used to differentiate the books on the basis of genre.
+
+The author that appears more times in the dataset is "Jeff Kiney", that's because he is the author with more bestselling books in the time analyzed (2009-2019), while Gary Chapman, Rick Riordan and Suzanne Collins are tied in number of topselling books. We also can observe that in the top 10 authors with more bestselling books, we have 5 from the genre non fiction and also 5 from the genre fiction.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+Amazon_top50_bestselling_books_from2009to2019_count2 <- Amazon_top50_bestselling_books_from2009to2019 %>%
+select(author, name, genre) %>% 
+  group_by(author, genre) %>% 
+  summarise(author_count = n()) %>% 
+  arrange(desc(author_count)) %>% 
+  head(n=10)
+
+ggplot(data = Amazon_top50_bestselling_books_from2009to2019_count2, mapping = aes(x = author, y = author_count, fill = genre))+
+geom_bar(stat ="identity")+
+labs(title = "Authors with most bestselling books from 2009 to 2019", subtitle = "Amazon top 50 bestselling books", x= "Author name", y = "Quantity of books")+
+  theme(axis.text.x = element_text (angle =90))
+
+
+
+```
+
+
+
+## Amazon top 10 bestselling books from 2009 to 2019
+
+Since we had a look at the top 10 authors for the best selling books in this graph we have alook at the top 10 books sold by their genre and the we compare the average price of the books by genre.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+Amazon_top50_bestselling_books_from2009to2019_v4 <- Amazon_top50_bestselling_books_from2009to2019 %>%
+group_by(name, genre, author) %>%
+  summarise (price = mean(price)) %>% 
+  arrange(desc(price)) %>% 
+  head(n=10)
+
+ggplot(data = Amazon_top50_bestselling_books_from2009to2019_v4, mapping = aes(x = name, y = price))+
+geom_point( size= 1.3, stroke = 2,aes(shape = genre, color = genre))+
+labs(title = "Top 10 most expensive books by genre", subtitle = "Amazon top 50 bestselling books from 2009 to 2019", x = "Book name", y =" Average Price")+
+theme(axis.text.x = element_text (angle =90))+
+ facet_wrap(~genre)
+
+
+```
+
+
+## Average number of reviews by genre
+
+We can observe that Fiction books have a higher average number of reviews than Non fiction ones. It should be really interesting to know if these reviews are good or bad, because this could help us to analyze if people tend to do more reviews for Fiction books because:
+
+They don't like it and they want to expose their opinion publicly.
+People who read Fiction books are more active online and are more likely to do reviews.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+Amazon_top50_bestselling_books_from2009to2019_genre_user_reviews <- Amazon_top50_bestselling_books_from2009to2019 %>%
+group_by(genre)%>%
+summarise (reviews = mean(reviews))
+
+ggplot(data = Amazon_top50_bestselling_books_from2009to2019_genre_user_reviews , mapping = aes(x = genre, y = reviews, fill = genre))+
+geom_col()+
+labs(title = "Average number of reviews by genre", subtitle = "Amazon top 50 bestselling books from 2009 to 2019", x = "Genre", y = "Average user reviews")
+```
+
+
+## User rating vs number of reviews
+
+There isn't a direct relationship between user rating and number of reviews, but we can see that usually a bigger user rating implies more reviews. It is good to remind that relationship doesn't imply causation.
+The min user rating was 3.3. We saw that the book with the lowest user rating was "Casual Vacancy" by J.K Rowling. This book belongs to the Fiction genre.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+
+ggplot (data = Amazon_top50_bestselling_books_from2009to2019, mapping = aes( x= user_rating, y = reviews)) +
+geom_point()+
+geom_smooth()+
+labs(title = "User rating vs number of reviews", x = "User ratings", y = "Total reviews", subtitle = "Amazon top 50 bestselling books from 2009 to 2019")
+
+```
+
+
+## Conclusion
+
+As a buyer wanting to buy books from Amazon, the data visualization makes it easier for the buyer to decide whether to buy a book based on its rating, reviews, or the greatest writers that did well between 2009 and 2019. To summarize, data visualization assists in making rapid decisions when given with graphs that are easy to read and comprehend.
+
